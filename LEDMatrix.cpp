@@ -6,70 +6,78 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
-#include <iostream>
-using namespace std;
+// Key parameters for ATmega168P
+// Flash (Kbytes):   16 Kbytes
+// SRAM (Kbytes):     1 Kbytes
+// EEPROM (Bytes):  512 Bytes
+// LEDs are common annod 
+
+
+#include <stdio.h>
+
+
 
 // Configuration
-#define LEX_MATRIX_WIDTH 	16
-#define LEX_MATRIX_HIGHT	 8
+#define LED_MATRIX_WIDTH 	16
+#define LED_MATRIX_HIGHT	 8
+#define LED_MATRIX_LEDS	 	 2
 
-// Settings
-#define LEX_MATRIX_SIZE 	LEX_MATRIX_WIDTH * LEX_MATRIX_HIGHT
+// 
+#define LED_MATRIX_SIZE 	LED_MATRIX_WIDTH * LED_MATRIX_HIGHT * LED_MATRIX_LEDS 
 
-union led_t {
-  struct {
-		unsigned char red;
-		unsigned char green;
-		unsigned char blue;
-    } colors;
-  char data[3];
-} led_u;
-
-
-class CLED
-{
-	public:
-		led_t m_data ;
-
-		void Set( unsigned char red, unsigned char green, unsigned char blue );
-		unsigned char GetRed() { return this->m_data.colors.red ; }
-		unsigned char GetGreen() { return this->m_data.colors.green ; }
-		unsigned char GetBlue() { return this->m_data.colors.blue ; }
-};
-
-void CLED::Set( unsigned char red, unsigned char green, unsigned char blue ) {
-	this->m_data.colors.red   = red ;
-	this->m_data.colors.green = green ;
-	this->m_data.colors.blue  = blue ;
-}
-
+// ToDo: Change this to a char to add PWM... 
+#define LED_COLOR_VAR		bool 
+#define LED_COLOR_OFF		false
+#define LED_COLOR_ON		true	
 
 class CLEDMatrix
 {
 	public:
-		CLED m_data[ LEX_MATRIX_SIZE ];
+		char m_data[ LED_MATRIX_SIZE / 8 ];
 
 		CLEDMatrix() { }
 
-		bool SetLED( unsigned char x, unsigned char y, unsigned char red, unsigned char green, unsigned char blue  );
-		void SetAllLEDS( unsigned char red, unsigned char green, unsigned char blue );
+		bool SetLED( unsigned char x, unsigned char y, LED_COLOR_VAR red, LED_COLOR_VAR green );
+		void SetAllLEDS( LED_COLOR_VAR red, LED_COLOR_VAR green );
 
+		// Length = in bits 
 		bool LoadString( char * data, unsigned short length );
 } ;
 
-bool CLEDMatrix::SetLED( unsigned char x, unsigned char y, unsigned char red, unsigned char green, unsigned char blue ) {
-	if( x > LEX_MATRIX_WIDTH || y > LEX_MATRIX_HIGHT ) {
+// Extract bit from byte 
+// (byte >> pos) & 1
+
+// Setting a bit in a BYTE 
+// number |= 1 << x;
+
+bool CLEDMatrix::SetLED( unsigned char x, unsigned char y, LED_COLOR_VAR red, LED_COLOR_VAR green ) {
+	if( x > LED_MATRIX_WIDTH || y > LED_MATRIX_HIGHT ) {
 		return false;
 	}
 
-	this->m_data[ x * y ].Set( red, green, blue ); ;
+	// ToDo: this is messed. here is where i am 
+	unsigned char offset = ( x * LED_MATRIX_LEDS * LED_MATRIX_WIDTH / 8 ) ; 
+	if( red == LED_COLOR_OFF ) {
+		this->m_data[ offset   ] |= 0 << (x * y * 2) % 8 ;		
+	} else {
+		this->m_data[ offset   ] |= 1 << (x * y * 2) % 8;	
+	}
+
+	if( green == LED_COLOR_OFF ) {
+		this->m_data[ offset+1 ] |= 0 << (x * y * 2) % 8;		
+	} else {
+		this->m_data[ offset+1 ] |= 1 << (x * y * 2) % 8;	
+	}
+
 	return true ;
 }
 
-void CLEDMatrix::SetAllLEDS( unsigned char red, unsigned char green, unsigned char blue ) {
+void CLEDMatrix::SetAllLEDS( LED_COLOR_VAR red, LED_COLOR_VAR green ) {
 	// Turn off all the LEDS
-	for( unsigned short offset = 0 ; offset < LEX_MATRIX_SIZE; offset++ ) {
-		this->m_data[ offset ].Set(red, green, blue );
+	for( unsigned short offsetWidth = 0 ; offsetWidth < LED_MATRIX_WIDTH; offsetWidth++ ) {
+		for( unsigned short offsetHeight = 0 ; offsetHeight < LED_MATRIX_HIGHT; offsetHeight++ ) {
+			this->SetLED(offsetWidth, offsetHeight, red, green );
+		}	
 	}
 }
 
@@ -87,30 +95,35 @@ int char2int(char input)
 	}
 }
 
-// Assuming src to be zero terminated and target to be sufficiently large
-void hex2bin(const char* src, char* target)
-{
-	while(*src && src[1])
-	{
-		*(target++) = char2int(*src))*16 + char2int(src[1]);
-		src += 2;
-	}
-}
+
+
 
 // This function will set up LED glyph from a string made with the online editor.
-// "010203"
+// 8x16x2 = 256 LEDs, or 32 BYTES. 64 letters in hex for the entire display. 
 bool CLEDMatrix::LoadString( char * data, unsigned short length ) {
-	if( length > LEX_MATRIX_SIZE * 3 ) {
-		return false ; // Too big
+	// Check the size of the string to make sure we don't get any buffer overflows.
+	// ToDo: 	
+
+	// Reset the matrix. 
+	this->SetAllLEDS( LED_COLOR_OFF, LED_COLOR_OFF ) ; 
+
+	// Decode the string, and set the LEDs 	
+	for( unsigned short offset = 0 ; offset < length ; offset++) {
+		if( offset % 2 == 0 ) {
+			output += char2int( data[offset] ) * 16  ; 
+		} else {
+			output += char2int( data[offset] ) ; 
+
+			this->m_data[ offset / 2 ] = output ; 
+
+			// Reset the var 
+			output = 0 ; 
+		}
+		// printf( "\noffset=[%d], char=[%d] output=[%d]", offset, data[offset], output);
+		
 	}
 
-	unsigned short offset = 0 ;
-	while( offset < length ) {
-		unsigned short led_offset = offset / 3 ;
-		unsigned char led_color = 0 ;
-		this->m_data[ led_offset ].Set( x, y,  );
-	}
-	return true ;
+	return true ; 
 }
 
 
@@ -119,7 +132,7 @@ int main() {
 
 	CLEDMatrix matrix ;
 
-	if( ! matrix.LoadString( "A0B1C2", 2 ) ) {
+	if( ! matrix.LoadString( "A0B1C2", 6 ) ) {
 		cout << "Matrix loaded" << endl;
 	}
 
