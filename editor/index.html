@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <meta content='text/html; charset=utf-8' http-equiv='Content-type' />
+    <title>VHS Badge frame editor</title>
+
+    <link href="./stylesheets/pixie.css" media="screen" rel="stylesheet" type="text/css" />
+    <script src="./javascripts/jquery.js" type="text/javascript"></script>
+    <script src="./javascripts/jqcolor.js" type="text/javascript"></script>
+    <script src="./javascripts/jquery.hotkeys-0.7.9.min.js" type="text/javascript"></script>
+    <script src="./javascripts/pixie.js" type="text/javascript"></script>
+    <script src="./javascripts/getColorValues.js" type="text/javascript"></script>
+    <style>    
+        .canvas {
+            width:  496px !important;
+            height: 248px !important;
+        }
+        .pixel, .swatch {
+            width: 30px !important;
+            height: 30px !important;
+        }
+        .swatch {
+            border: 1px solid black; 
+        }
+        
+        .colorbar {
+            width: 150px !important;
+        }
+    
+    </style>
+    <script type="text/javascript">
+        function bit_set(num,bit){
+            return num | 1<<bit;
+        }
+
+        function bit_clear(num,bit){
+            return num & ~(1<<bit);
+        }
+
+        
+    
+      (function($) {
+        $(function() {
+          function rand(n) {
+            return Math.floor(Math.random()*n);
+          }
+        
+          $('#pixie').pixie({
+            width: 16,
+            height: 8,
+            layers: 1,
+            initializer: function(canvas) {
+              /*canvas.addAction({
+                name: "Alert",
+                perform: function() {
+                  alert("Hi");
+                }
+               
+              });
+               */
+               
+              // Add some more colors 
+              $.each(["#FFF", "#F00", "#0F0", "#FF0"], function(i, color) {
+                canvas.addSwatch(color);
+              });
+              /*
+              canvas.addAction({
+                name: "Random Fill",
+                hotkeys: ["ctrl+r"],
+                perform: function(canvas) {
+                  canvas.eachPixel(function() {
+                    this.color('#' + [
+                      canvas.toHex(rand(255)),
+                      canvas.toHex(rand(255)),
+                      canvas.toHex(rand(255))
+                    ].join(''));
+                  });
+                }
+              });
+              */
+              canvas.addAction({
+                name: "Export Image",
+                hotkeys: ["ctrl+e"],
+                perform: function(canvas) {
+                    $( ".outputImage" ).text("");
+                    $( ".debug" ).text("");
+                    
+                    var value = 0 ; 
+                    var offset = 0 ; 
+                    // RED 
+                    canvas.eachPixel(function(pixel, x, y) {
+                        // $( ".debug" ).append( "\nx=" + x + "y=" + y );
+                        
+                        
+                        var pixelColors = getColorValues( pixel.color() ) ;            
+                        if( pixelColors.red == 255 && pixelColors.blue != 255) {
+                            // ON 
+                            value = bit_set( value, offset ) ; 
+                            // $( ".debug" ).append( " On " );
+                        } else {
+                            // OFF 
+                            // $( ".debug" ).append( " off " );
+                            value = bit_clear( value, offset ) ; 
+                        }
+                        
+                        offset++; 
+                        if( offset >= 8 ) {
+                            offset = 0 ; 
+                            // $( ".debug" ).append( "value=[" + value + "] hex=" + value.toString(16) ); 
+                            if( value < 10 ) {
+                                $( ".outputImage" ).append( "0" ) ;    
+                            }
+                            $( ".outputImage" ).append( value.toString(16) ) ;    
+                            value = 0 ; 
+                        }
+                        
+                    }, 0);
+                    
+                    // GREEN  
+                    
+                    canvas.eachPixel(function(pixel, x, y) {
+                        var pixelColors = getColorValues( pixel.color() ) ;            
+                        if( pixelColors.green == 255 && pixelColors.blue != 255 ) {
+                            // ON 
+                            value = bit_set( value, offset ) ; 
+                        } else {
+                            // OFF 
+                            value = bit_clear( value, offset ) ; 
+                        }
+                        
+                        offset++; 
+                        if( offset >= 8 ) {
+                            offset = 0 ; 
+                            if( value < 10 ) {
+                                $( ".outputImage" ).append( "0" ) ;    
+                            }
+                            $( ".outputImage" ).append( value.toString(16) ) ;    
+                            value = 0 ; 
+                        }
+                        
+                    }, 0);                    
+                    
+                }
+              });  
+              
+            }
+          });
+        });
+      })(jQuery);
+    </script>
+  </head>
+
+  <body>
+    <div id='page'>
+        <div>
+            <h1>VHS Badge single frame designer</h1>
+            <p>This application will help you create single frame images for <a href='http://vancouver.hackspace.ca/wp/2013/09/30/vhs-led-matrix-badge/'>VHS SHBHH (5 year) badge</a>.<br />
+               Created from a modified version of <a href='https://github.com/STRd6/pixie'>STRd6 pixie code</a> found on <a href='https://github.com'>github</a>. Updated by <a href='http://www.abluestar.com/'>funvill</a><br />
+               <a href='https://github.com/funvill/VHSLEDMatrixBadge'>Pull requests accepted</a>. 
+               </p>
+            
+            <h2>Instructions:</h2>
+            <ol>
+                <li>Choose colours from the menu on the right.  Choices are:
+                <ul>
+                    <li><strong>White</strong>: pixel off</li>
+                    <li><strong>Red</strong>: turn on red LED</li>
+                    <li><strong>Green</strong>: turn on green LED</li>
+                    <li><strong>Yellow</strong>: turn on red & green LEDs</li>
+                </ul></li>
+                <li>Draw your picture</li>
+                <li>Click 'Export Image' to get a hex string for your image</li>
+            </ol>
+        </div>   
+
+        <div id='content'>
+            <div id='pixie'></div>
+        </div>
+        
+        <div style='clear:both'></div>
+        <h3>Output</h3>
+        <pre><div class='outputImage'></div></pre>    
+        <pre><div class='debug'></div></pre>    
+    </div>
+  </body>
+</html>
