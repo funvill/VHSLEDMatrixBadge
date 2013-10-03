@@ -210,7 +210,7 @@ bool CLEDMatrix::SetLEDRed( unsigned char x, unsigned char y, LED_COLOR_VAR red 
 	if( red == LED_COLOR_ON ) {
 		this->m_data[ offsetByte ] |= 1 << offsetBit ; 
 	} else { 
-		this->m_data[ offsetByte ] &= 0 << offsetBit ; 
+		this->m_data[ offsetByte ] &= ~(1 << offsetBit) ; 
 	}
 
 	return true ;
@@ -226,7 +226,7 @@ bool CLEDMatrix::SetLEDGreen( unsigned char x, unsigned char y, LED_COLOR_VAR gr
 	if( green == LED_COLOR_ON ) {
 		this->m_data[ offsetByte ] |= 1 << offsetBit ; 
 	} else { 
-		this->m_data[ offsetByte  ] &= 0 << offsetBit ; 
+		this->m_data[ offsetByte  ] &= ~(1 << offsetBit) ; 
 	}
 
 	return true ;
