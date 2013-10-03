@@ -1,5 +1,3 @@
-#include "stdafx.h"
-
 /*****************************************************************************
  * Name        : LEDMatrix.cpp
  * Author      : Steven Smethurst (https://github.com/funvill/) 
@@ -17,11 +15,12 @@
 // Flash (Kbytes):   16 Kbytes
 // SRAM (Kbytes):     1 Kbytes
 // EEPROM (Bytes):  512 Bytes
-// LEDs are common annod 
+// LEDs are common anode
 
 
 #include <stdio.h>
 #include <string.h>
+#include <avr/pgmspace.h>
 
 // Configuration
 #define LED_MATRIX_WIDTH 	16
@@ -39,7 +38,7 @@
 
 
 // defines 8x8 ascii characters 0x20-0x7F (32-127)
-unsigned char font_8x8[96][8] = {
+const unsigned char font_8x8[96][8] PROGMEM = {
         {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}, //
         {0x00,0x60,0xfa,0xfa,0x60,0x00,0x00,0x00}, // !
         {0x00,0xe0,0xe0,0x00,0xe0,0xe0,0x00,0x00}, // "
@@ -210,7 +209,7 @@ bool CLEDMatrix::SetLEDRed( unsigned char x, unsigned char y, LED_COLOR_VAR red 
 	if( red == LED_COLOR_ON ) {
 		this->m_data[ offsetByte ] |= 1 << offsetBit ; 
 	} else { 
-		this->m_data[ offsetByte ] &= 0 << offsetBit ; 
+		this->m_data[ offsetByte ] &= ~(1 << offsetBit) ; 
 	}
 
 	return true ;
@@ -226,7 +225,7 @@ bool CLEDMatrix::SetLEDGreen( unsigned char x, unsigned char y, LED_COLOR_VAR gr
 	if( green == LED_COLOR_ON ) {
 		this->m_data[ offsetByte ] |= 1 << offsetBit ; 
 	} else { 
-		this->m_data[ offsetByte  ] &= 0 << offsetBit ; 
+		this->m_data[ offsetByte  ] &= ~(1 << offsetBit) ; 
 	}
 
 	return true ;
@@ -291,7 +290,7 @@ void CLEDMatrix::SetLetter( unsigned char x, char letter ) {
 	for( unsigned char byte_offset = 0 ; byte_offset < 8 ; byte_offset++ ) {
 		for( unsigned char bit_offset = 0 ; bit_offset < 8 ; bit_offset++ ) {
 
-			bool value = GetBit( font_8x8[letter - 0x20][byte_offset], bit_offset ) ; 
+			bool value = GetBit( pgm_read_byte(font_8x8[letter - 0x20][byte_offset]), bit_offset ) ; 
 			unsigned char data_offset = (8*2)-(bit_offset*2) ;
 
 			// ToDo: Proper x offset. 
@@ -401,7 +400,7 @@ void CLEDMatrix::Debug() {
 
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int argc, char* argv[])
 {
 	CLEDMatrix matrix ;
 
